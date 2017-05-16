@@ -2,6 +2,7 @@ package ipfs
 
 import (
 	"context"
+	"fmt"
 	"os/user"
 	"path"
 	"runtime"
@@ -46,13 +47,25 @@ func StartNode() (*core.IpfsNode, error) {
 	return core.NewNode(ctx, cfg)
 }
 
-/*
-// GetStrings get strings by cid
-func GetStrings(node *core.IpfsNode, cid *cid.Cid) (stringArr []string, err error) {
+// GetStrings get strings of IpfsNode
+func GetStrings(node *core.IpfsNode, name string) (stringArr []string, err error) {
+	stringArr = make([]string, 0)
 	ctx, cancel := context.WithCancel(context.Background())
-	nodeGetter := node.DAG
 	defer cancel()
-	// merkledag proto Node
+
+	path, err := node.Namesys.Resolve(ctx, name)
+	if err != nil {
+		return stringArr, err
+	}
+
+	nodeGetter := node.DAG
+	cid, err := core.ResolveToCid(ctx, node, path)
+	fmt.Println("cid is", cid)
+
+	if err != nil {
+		return stringArr, err
+	}
+
 	nd, err := nodeGetter.Get(ctx, cid)
 	fmt.Println("the node is", nd)
 	if err != nil {
@@ -84,27 +97,7 @@ func GetStrings(node *core.IpfsNode, cid *cid.Cid) (stringArr []string, err erro
 	return stringArr, nil
 }
 
-// GetDAG Get DAG by string
-func GetDAG(node *core.IpfsNode, inputString string) (node.Node, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	pointsTo, err := node.Namesys.Resolve(node.Context(), node.Identity.Pretty())
-	if err != nil {
-		return nil, err
-	}
-
-	cid, err := core.ResolveToCid(ctx, node, pointsTo)
-	return getDAG(node, cid)
-}
-
-// getDAG get DAG by cid
-func getDAG(node *core.IpfsNode, cid *cid.Cid) (node.Node, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	return node.DAG.Get(ctx, cid)
-}
-
+/*
 // AddString add input string to ipfs node
 func AddString(node *core.IpfsNode, inputString string) (*cid.Cid, error) {
 	pointsTo, err := node.Namesys.Resolve(node.Context(), node.Identity.Pretty())
